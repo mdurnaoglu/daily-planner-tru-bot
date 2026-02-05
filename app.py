@@ -67,13 +67,26 @@ LOVE_REPLY_RU = "Мерт тебя безумно сильно любит и п�
 REPLIES = {
     "tr": {
         "start": (
-            "Merhaba!\n"
-            "Neler yapabiliyorum:\n"
-            "• Her gün 10:00'da 5 Rusça kelime gönderirim.\n"
-            "• Hatırlatıcı kurarım (örn: 'saat 15:00 toplantısını hatırlat').\n"
-            "• 15:00'te su içmeyi hatırlatırım.\n"
-            "• 15:02'de mini quiz gönderirim.\n"
-            "• /reminders ile bekleyen hatırlatmalarını listelerim."
+            "Merhaba Rusya Federasyonu)\n"
+            "Sana bazı kabiliyetlerimden bahsetmek istiyorum)\n"
+            "- Senin için planlama yapabilirim. Örneğin 'saat 15:00'te toplantım var' dersen, o saatte sana mesaj atıp hatırlatırım. Ya da 'annem aradı' dersen, onu geri araman gerektiğini sana hatırlatabilirim.\n"
+            "- Bazı özel yeteneklerim var. Bu özel bilgileri sana sadece özel biri söyleyebilir. Ona sormalısın.\n"
+            "- Günlük hatırlatmam gereken bazı şeyler var; bunları hatırlatacağım.\n"
+            "- Aynı zamanda her gün 5 kelime çevirisi göndererek dil öğrenmemize fayda sağlayacağım.\n\n"
+            "EN:\n"
+            "Hello Russian Federation)\n"
+            "I want to tell you about some of my abilities)\n"
+            "- I can plan things for you. For example, if you say \"I have a meeting at 15:00\", I will message you at that time to remind you. Or if you say \"my mom called\", I can remind you to call her back.\n"
+            "- I have some special abilities. Only a special person can tell you these special details. You should ask them.\n"
+            "- I have some daily reminders for you; I will remind you of them.\n"
+            "- Also, I will help us learn by sending 5 word translations every day.\n\n"
+            "RU:\n"
+            "Привет, Российская Федерация)\n"
+            "Хочу рассказать тебе о некоторых своих возможностях)\n"
+            "- Я могу планировать для тебя дела. Например, если ты скажешь «у меня встреча в 15:00», я напишу в это время и напомню. Или если ты скажешь «мама звонила», я напомню тебе перезвонить.\n"
+            "- У меня есть особые способности. Эти особые сведения может рассказать только особенный человек. Спроси его.\n"
+            "- У меня есть некоторые ежедневные напоминания; я буду о них напоминать.\n"
+            "- А ещё я буду помогать нам учить язык, отправляя каждый день 5 переводов слов."
         ),
         "reminder_set": "Tamam. {time} için hatırlatıcı kurdum.",
         "reminder_due": "Merhaba, bana '{text}' demiştin. Saat geldi, aksiyon almak ister misin ? )",
