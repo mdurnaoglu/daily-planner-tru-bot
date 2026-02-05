@@ -291,7 +291,7 @@ async def handle_message(message: Message, bot: Bot, pool: asyncpg.Pool) -> None
         return
 
     lowered = text.lower()
-    wants_reminder = ("hatırlat" in lowered) or ("напомни" in lowered)
+    wants_reminder = ("hatırlat" in lowered) or ("напомн" in lowered)
     t = parse_time_from_text(text)
     if not t:
         if wants_reminder:
