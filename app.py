@@ -57,6 +57,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("bot")
 
 TIME_RE = re.compile(r"(?i)\b(?:saat\s*)?(\d{1,2})[:.](\d{2})\b")
+TIME_HOUR_ONLY_TR = re.compile(r"(?i)\b(\d{1,2})\s*'?\s*(?:te|ta)\b")
+TIME_HOUR_ONLY_RU = re.compile(r"(?i)\b(?:в)\s*(\d{1,2})\b")
 LOVE_TRIGGERS = {
     "tr": ["mert beni seviyor mu"],
     "ru": ["мерт меня любит", "мерт меня любит?"],
@@ -128,6 +130,20 @@ def detect_lang(text: str) -> str:
 def parse_time_from_text(text: str):
     match = TIME_RE.search(text)
     if not match:
+        match_tr = TIME_HOUR_ONLY_TR.search(text)
+        if match_tr:
+            hour = int(match_tr.group(1))
+            minute = 0
+            if hour < 0 or hour > 23:
+                return None
+            return time(hour=hour, minute=minute)
+        match_ru = TIME_HOUR_ONLY_RU.search(text)
+        if match_ru:
+            hour = int(match_ru.group(1))
+            minute = 0
+            if hour < 0 or hour > 23:
+                return None
+            return time(hour=hour, minute=minute)
         return None
     hour = int(match.group(1))
     minute = int(match.group(2))
@@ -274,8 +290,14 @@ async def handle_message(message: Message, bot: Bot, pool: asyncpg.Pool) -> None
         await message.answer(reply)
         return
 
+    lowered = text.lower()
+    wants_reminder = ("hatırlat" in lowered) or ("напомни" in lowered)
     t = parse_time_from_text(text)
     if not t:
+        if wants_reminder:
+            await message.answer(
+                "Hangi saat için hatırlatayım? Örn: 'saat 15:00' ya da '15'te hatırlat'"
+            )
         return
 
     now = datetime.now(TZ)
@@ -283,10 +305,11 @@ async def handle_message(message: Message, bot: Bot, pool: asyncpg.Pool) -> None
     if remind_at <= now:
         remind_at = remind_at + timedelta(days=1)
 
-    await add_reminder(pool, message.chat.id, remind_at, text)
-    await message.answer(
-        REPLIES.get(lang, REPLIES["tr"])["reminder_set"].format(time=t.strftime("%H:%M"))
-    )
+    if wants_reminder:
+        await add_reminder(pool, message.chat.id, remind_at, text)
+        await message.answer(
+            REPLIES.get(lang, REPLIES["tr"])["reminder_set"].format(time=t.strftime("%H:%M"))
+        )
 
 
 async def handle_reminders(message: Message, pool: asyncpg.Pool) -> None:
