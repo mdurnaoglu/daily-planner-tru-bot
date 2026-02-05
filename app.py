@@ -12,7 +12,8 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.filters import CommandStart
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
 
@@ -45,6 +46,7 @@ DAILY_MINUTE = int(os.getenv("DAILY_MINUTE", "0"))
 WORDS_PER_DAY = int(os.getenv("WORDS_PER_DAY", "5"))
 PORT = int(os.getenv("PORT", "10000"))
 WORDS_FILE = os.getenv("WORDS_FILE", "words.json")
+SONGS_FILE = os.getenv("SONGS_FILE", "songs.json")
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN is required")
@@ -117,6 +119,14 @@ def load_words() -> list[dict]:
 
 
 WORDS = load_words()
+
+
+def load_songs() -> list[dict]:
+    with open(SONGS_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+SONGS = load_songs()
 
 
 def detect_lang(text: str) -> str:
@@ -329,6 +339,45 @@ async def handle_reminders(message: Message, pool: asyncpg.Pool) -> None:
     await message.answer("\n".join(lines))
 
 
+def build_song_message(song: dict) -> str:
+    title = song.get("title", "")
+    artist = song.get("artist", "")
+    genre = song.get("genre", "")
+    ru_link = song.get("ru_link")
+    lines = [
+        f"Şarkı: {title} • {artist}",
+        f"Tür: {genre}" if genre else "Tür: -",
+    ]
+    if ru_link:
+        lines.append(f"Rusça sözler: {ru_link}")
+    else:
+        lines.append("Rusça sözler: Çeviri bulunamadı")
+    return "\n".join(lines)
+
+
+def build_next_keyboard():
+    kb = InlineKeyboardBuilder()
+    kb.button(text="Next", callback_data="next_song")
+    return kb.as_markup()
+
+
+async def handle_song_suggestion(message: Message) -> None:
+    if not SONGS:
+        await message.answer("Şarkı listesi boş.")
+        return
+    song = random.choice(SONGS)
+    await message.answer(build_song_message(song), reply_markup=build_next_keyboard())
+
+
+async def handle_next_song(callback: CallbackQuery) -> None:
+    if not SONGS:
+        await callback.answer("Şarkı listesi boş.", show_alert=True)
+        return
+    song = random.choice(SONGS)
+    await callback.message.edit_text(build_song_message(song), reply_markup=build_next_keyboard())
+    await callback.answer()
+
+
 async def start_health_server() -> web.AppRunner:
     async def health(_):
         return web.Response(text="ok")
@@ -356,11 +405,19 @@ async def main() -> None:
     async def reminders_handler(message: Message):
         await handle_reminders(message, pool)
 
+    async def song_handler(message: Message):
+        await handle_song_suggestion(message)
+
+    async def next_song_handler(callback: CallbackQuery):
+        await handle_next_song(callback)
+
     async def message_handler(message: Message):
         await handle_message(message, bot, pool)
 
     dp.message.register(start_handler, CommandStart())
     dp.message.register(reminders_handler, F.text == "/reminders")
+    dp.message.register(song_handler, F.text == "/songsuggestion")
+    dp.callback_query.register(next_song_handler, F.data == "next_song")
     dp.message.register(message_handler, F.text)
 
     scheduler = AsyncIOScheduler(timezone=TZ)
