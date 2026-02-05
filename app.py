@@ -64,30 +64,24 @@ LOVE_TRIGGERS = {
 LOVE_REPLY_TR = "Mert seni inanılmaz derecede çok seviyor. ve seni sürekli olarak özlüyor"
 LOVE_REPLY_RU = "Мерт тебя безумно сильно любит и постоянно скучает по тебе."
 
+START_MESSAGE = (
+    "Привет, Российская Федерация)\n"
+    "Хочу рассказать тебе о некоторых своих возможностях)\n\n"
+    "Я могу планировать для тебя дела. Например, если ты скажешь «у меня встреча в 15:00», я напишу в это время и напомню. Или если ты скажешь «мама звонила», я напомню тебе перезвонить.\n"
+    "У меня есть особые способности. Эти особые сведения может рассказать только особенный человек. Спроси его.\n"
+    "У меня есть некоторые ежедневные напоминания; я буду о них напоминать.\n"
+    "А ещё я буду помогать нам учить язык, отправляя каждый день 5 переводов слов.\n\n"
+    "Merhaba Rusya Federasyonu)\n"
+    "Sana bazı kabiliyetlerimden bahsetmek istiyorum)\n\n"
+    "Senin için planlama yapabilirim. Örneğin saat 15:00'te toplantım var dersen o saatte sana mesaj atıp sana bunu hatırlatabilirim. Veya annen seni aradı ve geri araman gerektiğini sana hatırlatabilirim.\n"
+    "Bazı özel yeteneklerim var. Bu özel bilgileri sana sadece özel biri söyleyebilir. Ona sormalısın.\n"
+    "Günlük sana hatırlatmam gereken bazı şeyler var, bunları hatırlatacağım.\n"
+    "Aynı zamanda günlük 5 tane kelime çevirisi atarak dil öğrenmemize fayda sağlayacağım."
+)
+
 REPLIES = {
     "tr": {
-        "start": (
-            "Merhaba Rusya Federasyonu)\n"
-            "Sana bazı kabiliyetlerimden bahsetmek istiyorum)\n"
-            "- Senin için planlama yapabilirim. Örneğin 'saat 15:00'te toplantım var' dersen, o saatte sana mesaj atıp hatırlatırım. Ya da 'annem aradı' dersen, onu geri araman gerektiğini sana hatırlatabilirim.\n"
-            "- Bazı özel yeteneklerim var. Bu özel bilgileri sana sadece özel biri söyleyebilir. Ona sormalısın.\n"
-            "- Günlük hatırlatmam gereken bazı şeyler var; bunları hatırlatacağım.\n"
-            "- Aynı zamanda her gün 5 kelime çevirisi göndererek dil öğrenmemize fayda sağlayacağım.\n\n"
-            "EN:\n"
-            "Hello Russian Federation)\n"
-            "I want to tell you about some of my abilities)\n"
-            "- I can plan things for you. For example, if you say \"I have a meeting at 15:00\", I will message you at that time to remind you. Or if you say \"my mom called\", I can remind you to call her back.\n"
-            "- I have some special abilities. Only a special person can tell you these special details. You should ask them.\n"
-            "- I have some daily reminders for you; I will remind you of them.\n"
-            "- Also, I will help us learn by sending 5 word translations every day.\n\n"
-            "RU:\n"
-            "Привет, Российская Федерация)\n"
-            "Хочу рассказать тебе о некоторых своих возможностях)\n"
-            "- Я могу планировать для тебя дела. Например, если ты скажешь «у меня встреча в 15:00», я напишу в это время и напомню. Или если ты скажешь «мама звонила», я напомню тебе перезвонить.\n"
-            "- У меня есть особые способности. Эти особые сведения может рассказать только особенный человек. Спроси его.\n"
-            "- У меня есть некоторые ежедневные напоминания; я буду о них напоминать.\n"
-            "- А ещё я буду помогать нам учить язык, отправляя каждый день 5 переводов слов."
-        ),
+        "start": START_MESSAGE,
         "reminder_set": "Tamam. {time} için hatırlatıcı kurdum.",
         "reminder_due": "Merhaba, bana '{text}' demiştin. Saat geldi, aksiyon almak ister misin ? )",
         "daily_title": "*Words of the day*",
@@ -100,15 +94,7 @@ REPLIES = {
         "quiz_wrong": "Yaklaştın! Doğru cevap {answer}.",
     },
     "ru": {
-        "start": (
-            "Привет!\n"
-            "Что я умею:\n"
-            "• Каждый день в 10:00 отправляю 5 русских слов.\n"
-            "• Ставлю напоминания (например: «в 15:00 напомни про встречу»).\n"
-            "• В 15:00 напомню попить воды.\n"
-            "• В 15:02 пришлю мини‑викторину.\n"
-            "• /reminders покажет ожидающие напоминания."
-        ),
+        "start": START_MESSAGE,
         "reminder_set": "Готово. Поставил напоминание на {time}.",
         "reminder_due": "Привет! Ты просил(а): «{text}». Время пришло — хочешь заняться этим сейчас? )",
         "daily_title": "*Words of the day*",
