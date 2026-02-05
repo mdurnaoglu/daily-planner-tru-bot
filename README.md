@@ -19,6 +19,7 @@
    - Repo: bu proje
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `python app.py`
+   - Runtime: `python-3.11.9` (repo'daki `runtime.txt`)
 4. Environment variables:
    - `BOT_TOKEN`
    - `DATABASE_URL` (Render’ın verdiği bağlantı)
