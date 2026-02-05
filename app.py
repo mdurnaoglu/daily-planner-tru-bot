@@ -57,7 +57,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("bot")
 
 TIME_RE = re.compile(r"(?i)\b(?:saat\s*)?(\d{1,2})[:.](\d{2})\b")
-LOVE_TRIGGER = "mert beni seviyor mu"
+LOVE_TRIGGERS = {
+    "tr": ["mert beni seviyor mu"],
+    "ru": ["мерт меня любит", "мерт меня любит?"],
+}
 LOVE_REPLY_TR = "Mert seni inanılmaz derecede çok seviyor. ve seni sürekli olarak özlüyor"
 LOVE_REPLY_RU = "Мерт тебя безумно сильно любит и постоянно скучает по тебе."
 
@@ -65,8 +68,12 @@ REPLIES = {
     "tr": {
         "start": (
             "Merhaba!\n"
-            "- Her gün 10:00'da 5 Rusça kelime gönderirim.\n"
-            "- Hatırlatıcı için: 'saat 15:00 toplantısını hatırlat' gibi yazabilirsin."
+            "Neler yapabiliyorum:\n"
+            "• Her gün 10:00'da 5 Rusça kelime gönderirim.\n"
+            "• Hatırlatıcı kurarım (örn: 'saat 15:00 toplantısını hatırlat').\n"
+            "• 15:00'te su içmeyi hatırlatırım.\n"
+            "• 15:02'de mini quiz gönderirim.\n"
+            "• /reminders ile bekleyen hatırlatmalarını listelerim."
         ),
         "reminder_set": "Tamam. {time} için hatırlatıcı kurdum.",
         "reminder_due": "Merhaba, bana '{text}' demiştin. Saat geldi, aksiyon almak ister misin ? )",
@@ -82,8 +89,12 @@ REPLIES = {
     "ru": {
         "start": (
             "Привет!\n"
-            "- Каждый день в 10:00 отправляю 5 русских слов.\n"
-            "- Для напоминания напиши что-то вроде: «в 15:00 напомни про встречу»."
+            "Что я умею:\n"
+            "• Каждый день в 10:00 отправляю 5 русских слов.\n"
+            "• Ставлю напоминания (например: «в 15:00 напомни про встречу»).\n"
+            "• В 15:00 напомню попить воды.\n"
+            "• В 15:02 пришлю мини‑викторину.\n"
+            "• /reminders покажет ожидающие напоминания."
         ),
         "reminder_set": "Готово. Поставил напоминание на {time}.",
         "reminder_due": "Привет! Ты просил(а): «{text}». Время пришло — хочешь заняться этим сейчас? )",
@@ -258,7 +269,8 @@ async def handle_message(message: Message, bot: Bot, pool: asyncpg.Pool) -> None
             await clear_quiz_state(pool, message.chat.id)
             return
 
-    if LOVE_TRIGGER in text.lower():
+    lowered = text.lower()
+    if lowered in LOVE_TRIGGERS.get(lang, []) or lowered in LOVE_TRIGGERS["tr"]:
         reply = LOVE_REPLY_RU if lang == "ru" else LOVE_REPLY_TR
         await message.answer(reply)
         return
