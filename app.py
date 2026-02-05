@@ -316,9 +316,18 @@ async def main() -> None:
     pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
     await on_startup(bot, pool)
 
-    dp.message.register(handle_start, CommandStart())
-    dp.message.register(handle_reminders, F.text == "/reminders")
-    dp.message.register(handle_message, F.text)
+    async def start_handler(message: Message):
+        await handle_start(message, pool)
+
+    async def reminders_handler(message: Message):
+        await handle_reminders(message, pool)
+
+    async def message_handler(message: Message):
+        await handle_message(message, bot, pool)
+
+    dp.message.register(start_handler, CommandStart())
+    dp.message.register(reminders_handler, F.text == "/reminders")
+    dp.message.register(message_handler, F.text)
 
     scheduler = AsyncIOScheduler(timezone=TZ)
     scheduler.add_job(send_daily_words, "cron", hour=DAILY_HOUR, minute=DAILY_MINUTE, args=[bot, pool])
