@@ -345,13 +345,13 @@ def build_song_message(song: dict) -> str:
     genre = song.get("genre", "")
     ru_link = song.get("ru_link")
     lines = [
-        f"Şarkı: {title} • {artist}",
-        f"Tür: {genre}" if genre else "Tür: -",
+        f"Песня: {title} • {artist}",
+        f"Жанр: {genre}" if genre else "Жанр: -",
     ]
     if ru_link:
-        lines.append(f"Rusça sözler: {ru_link}")
+        lines.append(f"Перевод: {ru_link}")
     else:
-        lines.append("Rusça sözler: Çeviri bulunamadı")
+        lines.append("Перевод: перевод не найден")
     return "\n".join(lines)
 
 
