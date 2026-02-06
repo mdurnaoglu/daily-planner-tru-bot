@@ -11,7 +11,7 @@ from aiohttp import web
 from aiogram import Bot, Dispatcher, F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.exceptions import TelegramForbiddenError
-from aiogram.filters import CommandStart
+from aiogram.filters import Command, CommandStart
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -24,6 +24,7 @@ from db import (
     add_user,
     fetch_due_reminders,
     get_daily_state,
+    get_schedule_state,
     init_db,
     list_users,
     list_pending_reminders,
@@ -33,6 +34,8 @@ from db import (
     set_quiz_state,
     clear_quiz_state,
     update_daily_state,
+    update_last_quiz_date,
+    update_last_water_date,
     update_user_lang,
 )
 
@@ -261,6 +264,28 @@ async def send_quiz(bot: Bot, pool: asyncpg.Pool) -> None:
             logger.exception("Failed to send quiz to %s", chat_id)
 
 
+def _passed_time(now: datetime, hour: int, minute: int) -> bool:
+    return (now.hour, now.minute) >= (hour, minute)
+
+
+async def run_scheduled_broadcasts(bot: Bot, pool: asyncpg.Pool) -> None:
+    now = datetime.now(TZ)
+    today = now.date()
+
+    if _passed_time(now, DAILY_HOUR, DAILY_MINUTE):
+        await send_daily_words(bot, pool)
+
+    last_water_date, last_quiz_date = await get_schedule_state(pool)
+
+    if _passed_time(now, 15, 0) and last_water_date != today:
+        await send_water_reminder(bot, pool)
+        await update_last_water_date(pool, today)
+
+    if _passed_time(now, 15, 2) and last_quiz_date != today:
+        await send_quiz(bot, pool)
+        await update_last_quiz_date(pool, today)
+
+
 async def on_startup(bot: Bot, pool: asyncpg.Pool) -> None:
     await init_db(pool)
     logger.info("DB initialized")
@@ -276,6 +301,11 @@ async def handle_start(message: Message, pool: asyncpg.Pool) -> None:
 async def handle_message(message: Message, bot: Bot, pool: asyncpg.Pool) -> None:
     text = (message.text or "").strip()
     if not text:
+        return
+
+    normalized = text.lower().strip()
+    if normalized in {"turkishmusic", "songsuggestion", "/songsuggestion"}:
+        await handle_song_suggestion(message)
         return
 
     lang = detect_lang(text)
@@ -415,17 +445,18 @@ async def main() -> None:
         await handle_message(message, bot, pool)
 
     dp.message.register(start_handler, CommandStart())
-    dp.message.register(reminders_handler, F.text == "/reminders")
-    dp.message.register(song_handler, F.text == "/songsuggestion")
+    dp.message.register(reminders_handler, Command("reminders"))
+    dp.message.register(song_handler, Command("songsuggestion"))
     dp.callback_query.register(next_song_handler, F.data == "next_song")
     dp.message.register(message_handler, F.text)
 
     scheduler = AsyncIOScheduler(timezone=TZ)
-    scheduler.add_job(send_daily_words, "cron", hour=DAILY_HOUR, minute=DAILY_MINUTE, args=[bot, pool])
-    scheduler.add_job(send_water_reminder, "cron", hour=15, minute=0, args=[bot, pool])
-    scheduler.add_job(send_quiz, "cron", hour=15, minute=2, args=[bot, pool])
+    scheduler.add_job(run_scheduled_broadcasts, "interval", minutes=1, args=[bot, pool])
     scheduler.add_job(check_reminders, "interval", minutes=1, args=[bot, pool])
     scheduler.start()
+
+    # Catch up immediately after startup if a scheduled minute was missed during sleep/restart.
+    await run_scheduled_broadcasts(bot, pool)
 
     await start_health_server()
 
