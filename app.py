@@ -355,7 +355,7 @@ async def handle_message(message: Message, bot: Bot, pool: asyncpg.Pool) -> None
 
     normalized = text.lower().strip()
     if normalized in {"turkishmusic", "songsuggestion", "/songsuggestion"}:
-        await handle_song_suggestion(message)
+        await handle_song_suggestion(message, pool)
         return
 
     lang = detect_lang(text)
@@ -441,7 +441,10 @@ def build_next_keyboard():
     return kb.as_markup()
 
 
-async def handle_song_suggestion(message: Message) -> None:
+async def handle_song_suggestion(message: Message, pool: asyncpg.Pool) -> None:
+    lang = detect_lang(message.text or "")
+    await add_user(pool, message.chat.id, lang)
+    await update_user_lang(pool, message.chat.id, lang)
     if not SONGS:
         await message.answer("Şarkı listesi boş.")
         return
@@ -450,6 +453,9 @@ async def handle_song_suggestion(message: Message) -> None:
 
 
 async def handle_send_love_now(message: Message, bot: Bot, pool: asyncpg.Pool) -> None:
+    lang = detect_lang(message.text or "")
+    await add_user(pool, message.chat.id, lang)
+    await update_user_lang(pool, message.chat.id, lang)
     sent = await send_love_reminder(bot, pool)
     now = datetime.now(TZ).date()
     if sent > 0:
@@ -494,7 +500,7 @@ async def main() -> None:
         await handle_reminders(message, pool)
 
     async def song_handler(message: Message):
-        await handle_song_suggestion(message)
+        await handle_song_suggestion(message, pool)
 
     async def next_song_handler(callback: CallbackQuery):
         await handle_next_song(callback)
