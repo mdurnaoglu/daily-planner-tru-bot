@@ -457,9 +457,6 @@ async def handle_send_love_now(message: Message, bot: Bot, pool: asyncpg.Pool) -
     await add_user(pool, message.chat.id, lang)
     await update_user_lang(pool, message.chat.id, lang)
     sent = await send_love_reminder(bot, pool)
-    now = datetime.now(TZ).date()
-    if sent > 0:
-        await update_last_love_date(pool, now)
     await message.answer(f"Love bildirimi gönderildi. Alıcı sayısı: {sent}")
 
 
