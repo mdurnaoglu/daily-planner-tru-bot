@@ -94,7 +94,7 @@ REPLIES = {
         "reminder_set": "Tamam. {time} için hatırlatıcı kurdum.",
         "reminder_due": "Merhaba, bana '{text}' demiştin. Saat geldi, aksiyon almak ister misin ? )",
         "daily_title": "*Words of the day*",
-        "eat_reminder": "⏰ EAT REMINDER",
+        "eat_reminder": "Какой бы цвет лака ты ни сделала, тебе всё будет очень идти. Потому что Мерт правда обожает твои руки — в любом виде, какими бы они ни были.",
         "love_reminder": "Мерт тебя невероятно сильно любит. Хорошо, что ты появилась в его жизни. Ты изменила его жизнь, и за это он тебе благодарен.",
         "water_reminder": "💧 Su içmeyi unutma!",
         "reminders_empty": "Bekleyen hatırlatman yok.",
@@ -109,7 +109,7 @@ REPLIES = {
         "reminder_set": "Готово. Поставил напоминание на {time}.",
         "reminder_due": "Привет! Ты просил(а): «{text}». Время пришло — хочешь заняться этим сейчас? )",
         "daily_title": "*Words of the day*",
-        "eat_reminder": "⏰ EAT REMINDER",
+        "eat_reminder": "Какой бы цвет лака ты ни сделала, тебе всё будет очень идти. Потому что Мерт правда обожает твои руки — в любом виде, какими бы они ни были.",
         "love_reminder": "Мерт тебя невероятно сильно любит. Хорошо, что ты появилась в его жизни. Ты изменила его жизнь, и за это он тебе благодарен.",
         "water_reminder": "💧 Не забудь попить воды!",
         "reminders_empty": "У тебя нет ожидающих напоминаний.",
@@ -307,11 +307,11 @@ async def run_scheduled_broadcasts(bot: Bot, pool: asyncpg.Pool) -> None:
 
     last_eat_date, last_love_date, last_water_date, last_quiz_date = await get_schedule_state(pool)
 
-    if _passed_time(now, 12, 15) and last_eat_date != today:
+    if _passed_time(now, 12, 0) and last_eat_date != today:
         await send_eat_reminder(bot, pool)
         await update_last_eat_date(pool, today)
 
-    if _passed_time(now, 14, 0) and last_love_date != today:
+    if _passed_time(now, 14, 12) and last_love_date != today:
         await send_love_reminder(bot, pool)
         await update_last_love_date(pool, today)
 
