@@ -238,40 +238,49 @@ async def check_reminders(bot: Bot, pool: asyncpg.Pool) -> None:
     await mark_reminders_sent(pool, sent_ids, now)
 
 
-async def send_water_reminder(bot: Bot, pool: asyncpg.Pool) -> None:
+async def send_water_reminder(bot: Bot, pool: asyncpg.Pool) -> int:
     users = await list_users(pool)
+    sent_count = 0
     for chat_id, lang in users:
         message = REPLIES.get(lang, REPLIES["tr"])["water_reminder"]
         try:
             await bot.send_message(chat_id, message)
+            sent_count += 1
         except TelegramForbiddenError:
             await remove_user(pool, chat_id)
         except Exception:
             logger.exception("Failed to send water reminder to %s", chat_id)
+    return sent_count
 
 
-async def send_eat_reminder(bot: Bot, pool: asyncpg.Pool) -> None:
+async def send_eat_reminder(bot: Bot, pool: asyncpg.Pool) -> int:
     users = await list_users(pool)
+    sent_count = 0
     for chat_id, lang in users:
         message = REPLIES.get(lang, REPLIES["tr"])["eat_reminder"]
         try:
             await bot.send_message(chat_id, message)
+            sent_count += 1
         except TelegramForbiddenError:
             await remove_user(pool, chat_id)
         except Exception:
             logger.exception("Failed to send eat reminder to %s", chat_id)
+    return sent_count
 
 
-async def send_love_reminder(bot: Bot, pool: asyncpg.Pool) -> None:
+async def send_love_reminder(bot: Bot, pool: asyncpg.Pool) -> int:
     users = await list_users(pool)
+    sent_count = 0
     for chat_id, lang in users:
         message = REPLIES.get(lang, REPLIES["tr"])["love_reminder"]
         try:
             await bot.send_message(chat_id, message)
+            sent_count += 1
         except TelegramForbiddenError:
             await remove_user(pool, chat_id)
         except Exception:
             logger.exception("Failed to send love reminder to %s", chat_id)
+    return sent_count
 
 
 async def send_quiz(bot: Bot, pool: asyncpg.Pool) -> None:
@@ -308,16 +317,19 @@ async def run_scheduled_broadcasts(bot: Bot, pool: asyncpg.Pool) -> None:
     last_eat_date, last_love_date, last_water_date, last_quiz_date = await get_schedule_state(pool)
 
     if _passed_time(now, 12, 0) and last_eat_date != today:
-        await send_eat_reminder(bot, pool)
-        await update_last_eat_date(pool, today)
+        eat_sent = await send_eat_reminder(bot, pool)
+        if eat_sent > 0:
+            await update_last_eat_date(pool, today)
 
     if _passed_time(now, 14, 50) and last_love_date != today:
-        await send_love_reminder(bot, pool)
-        await update_last_love_date(pool, today)
+        love_sent = await send_love_reminder(bot, pool)
+        if love_sent > 0:
+            await update_last_love_date(pool, today)
 
     if _passed_time(now, 15, 0) and last_water_date != today:
-        await send_water_reminder(bot, pool)
-        await update_last_water_date(pool, today)
+        water_sent = await send_water_reminder(bot, pool)
+        if water_sent > 0:
+            await update_last_water_date(pool, today)
 
     if _passed_time(now, 15, 2) and last_quiz_date != today:
         await send_quiz(bot, pool)
@@ -437,6 +449,14 @@ async def handle_song_suggestion(message: Message) -> None:
     await message.answer(build_song_message(song), reply_markup=build_next_keyboard())
 
 
+async def handle_send_love_now(message: Message, bot: Bot, pool: asyncpg.Pool) -> None:
+    sent = await send_love_reminder(bot, pool)
+    now = datetime.now(TZ).date()
+    if sent > 0:
+        await update_last_love_date(pool, now)
+    await message.answer(f"Love bildirimi gönderildi. Alıcı sayısı: {sent}")
+
+
 async def handle_next_song(callback: CallbackQuery) -> None:
     if not SONGS:
         await callback.answer("Şarkı listesi boş.", show_alert=True)
@@ -479,12 +499,16 @@ async def main() -> None:
     async def next_song_handler(callback: CallbackQuery):
         await handle_next_song(callback)
 
+    async def send_love_now_handler(message: Message):
+        await handle_send_love_now(message, bot, pool)
+
     async def message_handler(message: Message):
         await handle_message(message, bot, pool)
 
     dp.message.register(start_handler, CommandStart())
     dp.message.register(reminders_handler, Command("reminders"))
     dp.message.register(song_handler, Command("songsuggestion"))
+    dp.message.register(send_love_now_handler, Command("sendlove"))
     dp.callback_query.register(next_song_handler, F.data == "next_song")
     dp.message.register(message_handler, F.text)
 
