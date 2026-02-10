@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS daily_state (
     id SMALLINT PRIMARY KEY DEFAULT 1,
     last_sent_date DATE,
     last_index INT NOT NULL DEFAULT 0,
+    last_apology_date DATE,
     last_eat_date DATE,
     last_love_date DATE,
     last_water_date DATE,
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS quiz_state (
 
 ALTER_USERS_LANG_SQL = "ALTER TABLE users ADD COLUMN IF NOT EXISTS lang TEXT NOT NULL DEFAULT 'tr';"
 ALTER_DAILY_STATE_SQL = """
+ALTER TABLE daily_state ADD COLUMN IF NOT EXISTS last_apology_date DATE;
 ALTER TABLE daily_state ADD COLUMN IF NOT EXISTS last_eat_date DATE;
 ALTER TABLE daily_state ADD COLUMN IF NOT EXISTS last_love_date DATE;
 ALTER TABLE daily_state ADD COLUMN IF NOT EXISTS last_water_date DATE;
@@ -136,9 +138,23 @@ async def update_daily_state(pool: asyncpg.Pool, last_sent_date, last_index: int
 async def get_schedule_state(pool: asyncpg.Pool):
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT last_eat_date, last_love_date, last_water_date, last_quiz_date FROM daily_state WHERE id=1"
+            "SELECT last_apology_date, last_eat_date, last_love_date, last_water_date, last_quiz_date FROM daily_state WHERE id=1"
         )
-    return row["last_eat_date"], row["last_love_date"], row["last_water_date"], row["last_quiz_date"]
+    return (
+        row["last_apology_date"],
+        row["last_eat_date"],
+        row["last_love_date"],
+        row["last_water_date"],
+        row["last_quiz_date"],
+    )
+
+
+async def update_last_apology_date(pool: asyncpg.Pool, last_apology_date) -> None:
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE daily_state SET last_apology_date=$1 WHERE id=1",
+            last_apology_date,
+        )
 
 
 async def update_last_eat_date(pool: asyncpg.Pool, last_eat_date) -> None:

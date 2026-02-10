@@ -34,6 +34,7 @@ from db import (
     set_quiz_state,
     clear_quiz_state,
     update_daily_state,
+    update_last_apology_date,
     update_last_eat_date,
     update_last_love_date,
     update_last_quiz_date,
@@ -94,6 +95,7 @@ REPLIES = {
         "reminder_set": "Tamam. {time} için hatırlatıcı kurdum.",
         "reminder_due": "Merhaba, bana '{text}' demiştin. Saat geldi, aksiyon almak ister misin ? )",
         "daily_title": "*Words of the day*",
+        "apology_reminder": "Я прошу прощения у Российской Федерации за то, что не говорю по-русски.",
         "eat_reminder": "Какой бы цвет лака ты ни сделала, тебе всё будет очень идти. Потому что Мерт правда обожает твои руки — в любом виде, какими бы они ни были.",
         "love_reminder": "Мерт безумно тебя любит и правда сейчас очень расстроен.\nНа самом деле он просто боялся, что вашей любви может что-то навредить. Но он сказал мне, что ты — самая лучшая девушка в мире. Я тоже хотела передать тебе это.\nВы ещё будете смеяться, вспоминая эти дни. И в тот момент Мерт будет так близко к тебе, что сможет поцеловать тебя в лоб.",
         "water_reminder": "💧 Su içmeyi unutma!",
@@ -109,6 +111,7 @@ REPLIES = {
         "reminder_set": "Готово. Поставил напоминание на {time}.",
         "reminder_due": "Привет! Ты просил(а): «{text}». Время пришло — хочешь заняться этим сейчас? )",
         "daily_title": "*Words of the day*",
+        "apology_reminder": "Я прошу прощения у Российской Федерации за то, что не говорю по-русски.",
         "eat_reminder": "Какой бы цвет лака ты ни сделала, тебе всё будет очень идти. Потому что Мерт правда обожает твои руки — в любом виде, какими бы они ни были.",
         "love_reminder": "Мерт безумно тебя любит и правда сейчас очень расстроен.\nНа самом деле он просто боялся, что вашей любви может что-то навредить. Но он сказал мне, что ты — самая лучшая девушка в мире. Я тоже хотела передать тебе это.\nВы ещё будете смеяться, вспоминая эти дни. И в тот момент Мерт будет так близко к тебе, что сможет поцеловать тебя в лоб.",
         "water_reminder": "💧 Не забудь попить воды!",
@@ -283,6 +286,21 @@ async def send_love_reminder(bot: Bot, pool: asyncpg.Pool) -> int:
     return sent_count
 
 
+async def send_apology_reminder(bot: Bot, pool: asyncpg.Pool) -> int:
+    users = await list_users(pool)
+    sent_count = 0
+    for chat_id, lang in users:
+        message = REPLIES.get(lang, REPLIES["tr"])["apology_reminder"]
+        try:
+            await bot.send_message(chat_id, message)
+            sent_count += 1
+        except TelegramForbiddenError:
+            await remove_user(pool, chat_id)
+        except Exception:
+            logger.exception("Failed to send apology reminder to %s", chat_id)
+    return sent_count
+
+
 async def send_quiz(bot: Bot, pool: asyncpg.Pool) -> None:
     users = await list_users(pool)
     quiz = build_quiz()
@@ -314,7 +332,12 @@ async def run_scheduled_broadcasts(bot: Bot, pool: asyncpg.Pool) -> None:
     if _passed_time(now, DAILY_HOUR, DAILY_MINUTE):
         await send_daily_words(bot, pool)
 
-    last_eat_date, last_love_date, last_water_date, last_quiz_date = await get_schedule_state(pool)
+    last_apology_date, last_eat_date, last_love_date, last_water_date, last_quiz_date = await get_schedule_state(pool)
+
+    if _passed_time(now, 1, 17) and last_apology_date != today:
+        apology_sent = await send_apology_reminder(bot, pool)
+        if apology_sent > 0:
+            await update_last_apology_date(pool, today)
 
     if _passed_time(now, 12, 0) and last_eat_date != today:
         eat_sent = await send_eat_reminder(bot, pool)
