@@ -483,6 +483,34 @@ async def handle_send_love_now(message: Message, bot: Bot, pool: asyncpg.Pool) -
     await message.answer(f"Love bildirimi gönderildi. Alıcı sayısı: {sent}")
 
 
+async def handle_send_event_now(message: Message, bot: Bot, pool: asyncpg.Pool) -> None:
+    lang = detect_lang(message.text or "")
+    await add_user(pool, message.chat.id, lang)
+    await update_user_lang(pool, message.chat.id, lang)
+    sent = await send_eat_reminder(bot, pool)
+    await message.answer(f"Event bildirimi gönderildi. Alıcı sayısı: {sent}")
+
+
+async def handle_debug_schedule(message: Message, pool: asyncpg.Pool) -> None:
+    now = datetime.now(TZ)
+    today = now.date()
+    last_apology_date, last_eat_date, last_love_date, last_water_date, last_quiz_date = await get_schedule_state(pool)
+    lines = [
+        f"now={now.strftime('%Y-%m-%d %H:%M:%S %Z')}",
+        f"last_apology_date={last_apology_date}",
+        f"last_eat_date={last_eat_date}",
+        f"last_love_date={last_love_date}",
+        f"last_water_date={last_water_date}",
+        f"last_quiz_date={last_quiz_date}",
+        f"due_01_17={_passed_time(now, 1, 17) and last_apology_date != today}",
+        f"due_12_15={_passed_time(now, 12, 15) and last_eat_date != today}",
+        f"due_14_50={_passed_time(now, 14, 50) and last_love_date != today}",
+        f"due_15_00={_passed_time(now, 15, 0) and last_water_date != today}",
+        f"due_15_02={_passed_time(now, 15, 2) and last_quiz_date != today}",
+    ]
+    await message.answer("\n".join(lines))
+
+
 async def handle_next_song(callback: CallbackQuery) -> None:
     if not SONGS:
         await callback.answer("Şarkı listesi boş.", show_alert=True)
@@ -528,6 +556,12 @@ async def main() -> None:
     async def send_love_now_handler(message: Message):
         await handle_send_love_now(message, bot, pool)
 
+    async def send_event_now_handler(message: Message):
+        await handle_send_event_now(message, bot, pool)
+
+    async def debug_schedule_handler(message: Message):
+        await handle_debug_schedule(message, pool)
+
     async def message_handler(message: Message):
         await handle_message(message, bot, pool)
 
@@ -535,6 +569,8 @@ async def main() -> None:
     dp.message.register(reminders_handler, Command("reminders"))
     dp.message.register(song_handler, Command("songsuggestion"))
     dp.message.register(send_love_now_handler, Command("sendlove"))
+    dp.message.register(send_event_now_handler, Command("sendevent"))
+    dp.message.register(debug_schedule_handler, Command("debugschedule"))
     dp.callback_query.register(next_song_handler, F.data == "next_song")
     dp.message.register(message_handler, F.text)
 
