@@ -53,6 +53,7 @@ WORDS_PER_DAY = int(os.getenv("WORDS_PER_DAY", "5"))
 PORT = int(os.getenv("PORT", "10000"))
 WORDS_FILE = os.getenv("WORDS_FILE", "words.json")
 SONGS_FILE = os.getenv("SONGS_FILE", "songs.json")
+PAUSED_MODE = os.getenv("PAUSED_MODE", "true").lower() == "true"
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN is required")
@@ -534,6 +535,14 @@ async def start_health_server() -> web.AppRunner:
     return runner
 
 
+async def handle_paused_message(message: Message) -> None:
+    await message.answer("Bot geçici olarak durduruldu.")
+
+
+async def handle_paused_callback(callback: CallbackQuery) -> None:
+    await callback.answer("Bot geçici olarak durduruldu.", show_alert=True)
+
+
 async def main() -> None:
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
@@ -565,22 +574,27 @@ async def main() -> None:
     async def message_handler(message: Message):
         await handle_message(message, bot, pool)
 
-    dp.message.register(start_handler, CommandStart())
-    dp.message.register(reminders_handler, Command("reminders"))
-    dp.message.register(song_handler, Command("songsuggestion"))
-    dp.message.register(send_love_now_handler, Command("sendlove"))
-    dp.message.register(send_event_now_handler, Command("sendevent"))
-    dp.message.register(debug_schedule_handler, Command("debugschedule"))
-    dp.callback_query.register(next_song_handler, F.data == "next_song")
-    dp.message.register(message_handler, F.text)
+    if PAUSED_MODE:
+        logger.info("Bot is running in paused mode")
+        dp.message.register(handle_paused_message, F.text)
+        dp.callback_query.register(handle_paused_callback)
+    else:
+        dp.message.register(start_handler, CommandStart())
+        dp.message.register(reminders_handler, Command("reminders"))
+        dp.message.register(song_handler, Command("songsuggestion"))
+        dp.message.register(send_love_now_handler, Command("sendlove"))
+        dp.message.register(send_event_now_handler, Command("sendevent"))
+        dp.message.register(debug_schedule_handler, Command("debugschedule"))
+        dp.callback_query.register(next_song_handler, F.data == "next_song")
+        dp.message.register(message_handler, F.text)
 
-    scheduler = AsyncIOScheduler(timezone=TZ)
-    scheduler.add_job(run_scheduled_broadcasts, "interval", minutes=1, args=[bot, pool])
-    scheduler.add_job(check_reminders, "interval", minutes=1, args=[bot, pool])
-    scheduler.start()
+        scheduler = AsyncIOScheduler(timezone=TZ)
+        scheduler.add_job(run_scheduled_broadcasts, "interval", minutes=1, args=[bot, pool])
+        scheduler.add_job(check_reminders, "interval", minutes=1, args=[bot, pool])
+        scheduler.start()
 
-    # Catch up immediately after startup if a scheduled minute was missed during sleep/restart.
-    await run_scheduled_broadcasts(bot, pool)
+        # Catch up immediately after startup if a scheduled minute was missed during sleep/restart.
+        await run_scheduled_broadcasts(bot, pool)
 
     await start_health_server()
 
